@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { FilterState } from "./filter-sidebar"
 
 // Sample items data
 const items = [
@@ -17,7 +18,8 @@ const items = [
     name: "Blue Backpack",
     category: "Bags",
     location: "Library, 2nd Floor",
-    image: "/placeholder.svg?height=200&width=200",
+    coordinates: { lat: 22.796259, lng: 75.842003 },
+    image: "Blue Backpack.jpg",
     status: "lost",
     date: "2 hours ago",
   },
@@ -26,7 +28,8 @@ const items = [
     name: "iPhone 13",
     category: "Electronics",
     location: "Student Center",
-    image: "/placeholder.svg?height=200&width=200",
+    coordinates: { lat: 22.795719, lng: 75.842385 },
+    image: "iPhone 13.jpg",
     status: "found",
     date: "Yesterday",
   },
@@ -35,7 +38,8 @@ const items = [
     name: "Water Bottle",
     category: "Accessories",
     location: "Gym",
-    image: "/placeholder.svg?height=200&width=200",
+    coordinates: { lat: 22.796310, lng: 75.842580 },
+    image: "Water Bottle.jpg",
     status: "claimed",
     date: "2 days ago",
   },
@@ -44,7 +48,8 @@ const items = [
     name: "Textbook",
     category: "Books",
     location: "Science Building",
-    image: "/placeholder.svg?height=200&width=200",
+    coordinates: { lat: 22.796097, lng: 75.842956 },
+    image: "Textbook.jpg",
     status: "lost",
     date: "3 days ago",
   },
@@ -53,7 +58,8 @@ const items = [
     name: "Laptop Charger",
     category: "Electronics",
     location: "Engineering Lab",
-    image: "/placeholder.svg?height=200&width=200",
+    coordinates: { lat: 22.795836, lng: 75.842985 },
+    image: "Laptop Charger.jpg",
     status: "found",
     date: "4 days ago",
   },
@@ -62,7 +68,8 @@ const items = [
     name: "Student ID Card",
     category: "Documents",
     location: "Cafeteria",
-    image: "/placeholder.svg?height=200&width=200",
+    coordinates: { lat: 22.795964, lng: 75.842887 },
+    image: "Student ID Card.jpg",
     status: "claimed",
     date: "5 days ago",
   },
@@ -71,7 +78,8 @@ const items = [
     name: "Wireless Earbuds",
     category: "Electronics",
     location: "Library",
-    image: "/placeholder.svg?height=200&width=200",
+    coordinates: { lat: 22.796097, lng: 75.842441 },
+    image: "Wireless Earbuds.jpg",
     status: "lost",
     date: "1 week ago",
   },
@@ -80,7 +88,8 @@ const items = [
     name: "Glasses Case",
     category: "Accessories",
     location: "Student Center",
-    image: "/placeholder.svg?height=200&width=200",
+    coordinates: { lat: 22.796220, lng: 75.843401 },
+    image: "Glasses Case.jpg",
     status: "found",
     date: "1 week ago",
   },
@@ -89,35 +98,73 @@ const items = [
     name: "Umbrella",
     category: "Accessories",
     location: "Engineering Building",
-    image: "/placeholder.svg?height=200&width=200",
+    coordinates: { lat: 22.795613, lng: 75.843577 },
+    image: "Umbrella.jpg",
     status: "lost",
     date: "2 weeks ago",
   },
 ]
 
 interface ItemGalleryProps {
-  searchQuery?: string
+  searchQuery?: string;
+  filterSidebar?: boolean;
 }
 
-export function ItemGallery({ searchQuery = "" }: ItemGalleryProps) {
+export function ItemGallery({ searchQuery = "", filterSidebar = true }: ItemGalleryProps) {
   const [sortBy, setSortBy] = useState("newest")
   const [filteredItems, setFilteredItems] = useState(items)
+  const [activeFilters, setActiveFilters] = useState<FilterState>({
+    statusFilter: "all",
+    dateRange: [0, 30],
+    selectedCategories: [],
+    selectedLocations: []
+  })
 
-  useEffect(() => {
-    let filtered = [...items]
+  const handleFilterChange = (filters: FilterState) => {
+    setActiveFilters(filters);
+    applyFilters(filters, searchQuery, sortBy);
+  };
 
-    // Apply search filter
-    if (searchQuery) {
+  const applyFilters = (filters: FilterState, query: string, sort: string) => {
+    let filtered = [...items];
+
+    if (filters.statusFilter !== "all") {
+      filtered = filtered.filter(item => item.status === filters.statusFilter);
+    }
+
+    if (filters.selectedCategories.length > 0) {
+      filtered = filtered.filter(item => 
+        filters.selectedCategories.some(category => 
+          item.category.toLowerCase() === category.toLowerCase() ||
+          (category === "other" && !["electronics", "clothing", "accessories", "books", "ids"].includes(item.category.toLowerCase()))
+        )
+      );
+    }
+
+    if (filters.selectedLocations.length > 0) {
+      filtered = filtered.filter(item => {
+        const itemLocation = item.location.toLowerCase().replace(/\s+/g, '-');
+        return filters.selectedLocations.some(location => 
+          itemLocation.includes(location.toLowerCase())
+        );
+      });
+    }
+
+    if (filters.dateRange[0] !== 0 || filters.dateRange[1] !== 30) {
+      // Implementation depends on how your dates are stored
+      // This is a placeholder for the date filtering logic
+    }
+
+    if (query) {
       filtered = filtered.filter(
         (item) =>
-          item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.location.toLowerCase().includes(searchQuery.toLowerCase()),
+          item.name.toLowerCase().includes(query.toLowerCase()) ||
+          item.category.toLowerCase().includes(query.toLowerCase()) ||
+          item.location.toLowerCase().includes(query.toLowerCase()),
       )
     }
 
-    // Apply sorting
-    switch (sortBy) {
+    switch (sort) {
       case "newest":
         // Items are already sorted by newest
         break
@@ -132,8 +179,12 @@ export function ItemGallery({ searchQuery = "" }: ItemGalleryProps) {
         break
     }
 
-    setFilteredItems(filtered)
-  }, [searchQuery, sortBy])
+    setFilteredItems(filtered);
+  };
+
+  useEffect(() => {
+    applyFilters(activeFilters, searchQuery, sortBy);
+  }, [searchQuery, sortBy]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

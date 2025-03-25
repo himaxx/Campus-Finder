@@ -27,18 +27,8 @@ const icon = L.icon({
 const mapPins = [
   {
     id: "1",
-    lat: 51.505, // Replace with your actual coordinates
-    lng: -0.09,  // Replace with your actual coordinates
-    category: "Electronics",
-    item: "iPhone 13",
-    status: "found",
-    time: "Yesterday",
-    location: "Student Center",
-  },
-  {
-    id: "2",
-    lat: 51.505, // Replace with your actual coordinates
-    lng: -0.09,  // Replace with your actual coordinates
+    lat: 22.796259,
+    lng: 75.842003,
     category: "Bags",
     item: "Blue Backpack",
     status: "lost",
@@ -46,9 +36,19 @@ const mapPins = [
     location: "Library, 2nd Floor",
   },
   {
+    id: "2",
+    lat: 22.795719,
+    lng: 75.842385,
+    category: "Electronics",
+    item: "iPhone 13",
+    status: "found",
+    time: "Yesterday",
+    location: "Student Center",
+  },
+  {
     id: "3",
-    lat: 51.505, // Replace with your actual coordinates
-    lng: -0.09,  // Replace with your actual coordinates
+    lat: 22.796310,
+    lng: 75.842580,
     category: "Accessories",
     item: "Water Bottle",
     status: "claimed",
@@ -57,8 +57,8 @@ const mapPins = [
   },
   {
     id: "4",
-    lat: 51.505, // Replace with your actual coordinates
-    lng: -0.09,  // Replace with your actual coordinates
+    lat: 22.796097,
+    lng: 75.842956,
     category: "Books",
     item: "Textbook",
     status: "lost",
@@ -67,13 +67,53 @@ const mapPins = [
   },
   {
     id: "5",
-    lat: 51.505, // Replace with your actual coordinates
-    lng: -0.09,  // Replace with your actual coordinates
+    lat: 22.795836,
+    lng: 75.842985,
     category: "Electronics",
     item: "Laptop Charger",
     status: "found",
     time: "4 days ago",
     location: "Engineering Lab",
+  },
+  {
+    id: "6",
+    lat: 22.795964,
+    lng: 75.842887,
+    category: "Documents",
+    item: "Student ID Card",
+    status: "claimed",
+    time: "5 days ago",
+    location: "Cafeteria",
+  },
+  {
+    id: "7",
+    lat: 22.796097,
+    lng: 75.842441,
+    category: "Electronics",
+    item: "Wireless Earbuds",
+    status: "lost",
+    time: "1 week ago",
+    location: "Library",
+  },
+  {
+    id: "8",
+    lat: 22.796220,
+    lng: 75.843401,
+    category: "Accessories",
+    item: "Glasses Case",
+    status: "found",
+    time: "1 week ago",
+    location: "Student Center",
+  },
+  {
+    id: "9",
+    lat: 22.795613,
+    lng: 75.843577,
+    category: "Accessories",
+    item: "Umbrella",
+    status: "lost",
+    time: "2 weeks ago",
+    location: "Engineering Building",
   },
 ]
 
@@ -93,6 +133,7 @@ const MapWithNoSSR = dynamic(
 export function CampusMap() {
   const [selectedPin, setSelectedPin] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+  const mapRef = useRef<google.maps.Map | null>(null)
 
   const filteredPins = mapPins.filter(
     (pin) =>
@@ -125,8 +166,7 @@ export function CampusMap() {
           size="icon"
           className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm"
           onClick={() => {
-            const mapInstance = document.querySelector('.leaflet-container')?._reactInternals?.memoizedProps?.leaflet;
-            if (mapInstance && mapInstance.map) mapInstance.map.zoomIn();
+            if (mapRef.current) mapRef.current.zoomIn();
           }}
         >
           <ZoomIn className="h-4 w-4" />
@@ -137,8 +177,7 @@ export function CampusMap() {
           size="icon"
           className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm"
           onClick={() => {
-            const mapInstance = document.querySelector('.leaflet-container')?._reactInternals?.memoizedProps?.leaflet;
-            if (mapInstance && mapInstance.map) mapInstance.map.zoomOut();
+            if (mapRef.current) mapRef.current.zoomOut();
           }}
         >
           <ZoomOut className="h-4 w-4" />
