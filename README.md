@@ -43,15 +43,21 @@ A modern, intuitive lost & found platform built for college campuses using Next.
 - Automated notifications
 
 ## 🚀 Quick Start
-bash
 Clone the repository
+```bash 
 git clone https://github.com/yourusername/campus-finder.git
+```
 Install dependencies
+```bash
 cd campus-finder
+```
+```bash
 npm install
+```
 Run development server
+```bash
 npm run dev
-
+```
 Open [http://localhost:3000](http://localhost:3000) to view the app.
 
 ## 📸 Screenshots
