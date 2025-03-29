@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Send, User, Wand2 } from "lucide-react"
+import { Send, User, Wand2, Volume2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
 import { cn } from "@/lib/utils"
@@ -38,7 +38,9 @@ export function ChatAssistant() {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [input, setInput] = useState("")
   const [isTyping, setIsTyping] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const audioRef = useRef<HTMLAudioElement>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -101,8 +103,120 @@ export function ChatAssistant() {
     }
   }
 
+  // Function to convert text to speech
+  const speakMessage = async (text: string) => {
+    try {
+      setIsSpeaking(true);
+      console.log("Speaking message:", text);
+      
+      // Method 1: Try using the Web Speech API first (built into browsers)
+      if ('speechSynthesis' in window) {
+        console.log("Using Web Speech API");
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = (event) => {
+          console.error("Speech synthesis error:", event);
+          setIsSpeaking(false);
+        };
+        window.speechSynthesis.speak(utterance);
+        return;
+      }
+      
+      // Method 2: Fallback to Google TTS API
+      console.log("Falling back to Google TTS API");
+      const response = await fetch("https://texttospeech.googleapis.com/v1/text:synthesize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-User-Project": process.env.NEXT_PUBLIC_GOOGLE_PROJECT_ID || "",
+          "Authorization": `Bearer ${process.env.NEXT_PUBLIC_GOOGLE_AUTH_TOKEN || ""}`,
+        },
+        body: JSON.stringify({
+          input: {
+            text: text
+          },
+          voice: {
+            languageCode: "en-US", // Changed to en-US for better compatibility
+            name: "en-US-Standard-D" // Changed to a standard voice that's widely available
+          },
+          audioConfig: {
+            audioEncoding: "MP3" // Changed to MP3 for better browser compatibility
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Google TTS API error:", response.status, errorText);
+        throw new Error(`API returned ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log("API response received:", data);
+      
+      // Convert base64 to audio
+      if (data.audioContent) {
+        const audioContent = data.audioContent;
+        const audioBlob = convertBase64ToAudio(audioContent);
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        if (audioRef.current) {
+          console.log("Playing audio");
+          audioRef.current.src = audioUrl;
+          
+          // Add event listeners for debugging
+          audioRef.current.onloadedmetadata = () => console.log("Audio metadata loaded");
+          audioRef.current.oncanplay = () => console.log("Audio can play");
+          audioRef.current.onerror = (e) => console.error("Audio error:", e);
+          
+          const playPromise = audioRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => console.log("Audio playback started"))
+              .catch(error => {
+                console.error("Audio playback error:", error);
+                setIsSpeaking(false);
+              });
+          }
+          
+          audioRef.current.onended = () => {
+            console.log("Audio playback ended");
+            setIsSpeaking(false);
+            URL.revokeObjectURL(audioUrl);
+          };
+        } else {
+          console.error("Audio element reference is null");
+          setIsSpeaking(false);
+        }
+      } else {
+        console.error("No audio content in response:", data);
+        setIsSpeaking(false);
+      }
+    } catch (error) {
+      console.error("Error with text-to-speech:", error);
+      setIsSpeaking(false);
+    }
+  };
+
+  // Helper function to convert base64 to audio blob
+  const convertBase64ToAudio = (base64: string) => {
+    try {
+      const binaryString = window.atob(base64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return new Blob([bytes], { type: 'audio/mp3' }); // Changed to mp3
+    } catch (error) {
+      console.error("Error converting base64 to audio:", error);
+      throw error;
+    }
+  };
+
   return (
     <div className="flex h-[500px] flex-col rounded-lg border">
+      <audio ref={audioRef} className="hidden" controls />
+      
       <div className="flex-1 overflow-y-auto p-4">
         <div className="space-y-4">
           {messages.map((message) => (
@@ -138,6 +252,18 @@ export function ChatAssistant() {
                   )}
                 >
                   {message.content}
+                  {message.sender === "assistant" && (
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="ml-2 h-6 w-6 p-0" 
+                      onClick={() => speakMessage(message.content)}
+                      disabled={isSpeaking}
+                    >
+                      <Volume2 className="h-3 w-3" />
+                      <span className="sr-only">Speak message</span>
+                    </Button>
+                  )}
                 </div>
               </div>
             </motion.div>

@@ -142,6 +142,11 @@ export function CampusMap() {
       pin.location.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
+  // Ensure that the code using `window` is only executed on the client-side
+  if (typeof window !== 'undefined') {
+    // ... existing code that uses `window` ...
+  }
+
   return (
     <div className="relative h-[600px] w-full overflow-hidden">
       <div className="absolute left-4 top-4 z-10 flex w-64 items-center gap-2 rounded-lg bg-background/80 p-2 backdrop-blur-sm">
@@ -187,4 +192,6 @@ export function CampusMap() {
     </div>
   )
 }
+
+export default CampusMap;
 
